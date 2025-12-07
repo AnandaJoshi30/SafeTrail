@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeTrail - Your Trusted Travel Companion</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login/Signup Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div class="auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Login</button>
+                    <button class="auth-tab" data-tab="signup">Sign Up</button>
+                </div>
+                
+                <div id="loginForm" class="auth-form active">
+                    <h2>Welcome Back!</h2>
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                    <button id="loginBtn" class="btn-primary">Login</button>
+                </div>
+                
+                <div id="signupForm" class="auth-form">
+                    <h2>Create Account</h2>
+                    <input type="text" id="signupName" placeholder="Full Name" required>
+                    <input type="email" id="signupEmail" placeholder="Email" required>
+                    <input type="password" id="signupPassword" placeholder="Password" required>
+                    <input type="password" id="signupConfirm" placeholder="Confirm Password" required>
+                    <button id="signupBtn" class="btn-primary">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-shield-alt"></i>
+            <span>SafeTrail</span>
+        </div>
+        <div class="nav-menu">
+            <a href="#" class="nav-link active" data-page="map"><i class="fas fa-map"></i> Map</a>
+            <a href="#" class="nav-link" data-page="history"><i class="fas fa-history"></i> History</a>
+            <a href="#" class="nav-link" data-page="favorites"><i class="fas fa-star"></i> Favorites</a>
+            <a href="#" class="nav-link" data-page="settings"><i class="fas fa-cog"></i> Settings</a>
+        </div>
+        <div class="nav-user">
+            <span id="userName">Guest</span>
+            <button id="logoutBtn" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="search-section">
+                    <h3><i class="fas fa-route"></i> Plan Your Route</h3>
+                    <div class="input-group">
+                        <label>From:</label>
+                        <input type="text" id="fromInput" placeholder="Enter start location">
+                        <button id="useCurrentLocation" class="btn-secondary"><i class="fas fa-location-arrow"></i> Current Location</button>
+                    </div>
+                    <div class="input-group">
+                        <label>To:</label>
+                        <input type="text" id="toInput" placeholder="Enter destination">
+                    </div>
+                    <div class="route-buttons">
+                        <button id="fastestRoute" class="btn-primary"><i class="fas fa-bolt"></i> Fastest</button>
+                        <button id="safestRoute" class="btn-safe"><i class="fas fa-shield-alt"></i> Safest</button>
+                    </div>
+                </div>
+
+                <!-- Budget Calculator -->
+                <div class="budget-section">
+                    <h3><i class="fas fa-wallet"></i> Trip Budget</h3>
+                    <div class="budget-options">
+                        <label>
+                            <input type="radio" name="transport" value="walk" checked> 
+                            <i class="fas fa-walking"></i> Walk (Free)
+                        </label>
+                        <label>
+                            <input type="radio" name="transport" value="bike"> 
+                            <i class="fas fa-bicycle"></i> Bike (₹20/hr)
+                        </label>
+                        <label>
+                            <input type="radio" name="transport" value="taxi"> 
+                            <i class="fas fa-taxi"></i> Taxi (₹15/km)
+                        </label>
+                        <label>
+                            <input type="radio" name="transport" value="bus"> 
+                            <i class="fas fa-bus"></i> Bus (₹25)
+                        </label>
+                    </div>
+                    <div class="budget-display">
+                        <p>Estimated Cost: <strong id="budgetAmount">₹0.00</strong></p>
+                    </div>
+                </div>
+
+                <!-- User Persona Selection -->
+                <div class="persona-section">
+                    <h3><i class="fas fa-user-shield"></i> Travel Profile</h3>
+                    <select id="userPersona" class="persona-select">
+                        <option value="general">General Traveler</option>
+                        <option value="solo_female">Solo Female</option>
+                        <option value="senior">Senior Citizen</option>
+                        <option value="student">Student</option>
+                        <option value="delivery">Delivery Rider</option>
+                    </select>
+                    <p class="persona-info">Routes adapt to your safety needs</p>
+                </div>
+
+                <!-- Weather & Time Alerts -->
+                <div class="alerts-section">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Safety Alerts</h3>
+                    <div id="weatherAlert" class="alert-box hidden">
+                        <i class="fas fa-cloud-rain"></i>
+                        <span id="weatherText"></span>
+                    </div>
+                    <div id="timeAlert" class="alert-box hidden">
+                        <i class="fas fa-moon"></i>
+                        <span id="timeText"></span>
+                    </div>
+                    <div id="riskAlert" class="alert-box hidden">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="riskText"></span>
+                    </div>
+                    <div id="crowdAlert" class="alert-box hidden">
+                        <i class="fas fa-users"></i>
+                        <span id="crowdText"></span>
+                    </div>
+                </div>
+
+                <!-- Safe Havens -->
+                <div class="safe-havens-section">
+                    <h3><i class="fas fa-shield-alt"></i> Nearby Safe Spots</h3>
+                    <div id="safeHavensList" class="safe-havens-list">
+                        <p class="loading-text">Loading safe spots...</p>
+                    </div>
+                </div>
+
+                <div class="incident-section">
+                    <h3><i class="fas fa-flag"></i> Report Incident</h3>
+                    <div class="privacy-controls">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="anonymousMode">
+                            <span><i class="fas fa-user-secret"></i> Anonymous Mode</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="locationBlur">
+                            <span><i class="fas fa-map-marker-alt"></i> Blur Location (±100m)</span>
+                        </label>
+                    </div>
+                    <select id="incidentType">
+                        <option value="theft">Theft</option>
+                        <option value="harassment">Harassment</option>
+                        <option value="accident">Accident</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <textarea id="incidentDesc" placeholder="Description (optional)"></textarea>
+                    <button id="reportIncident" class="btn-warning"><i class="fas fa-exclamation-triangle"></i> Report</button>
+                </div>
+
+                <div class="sos-section">
+                    <button id="sosButton" class="btn-sos"><i class="fas fa-siren-on"></i> SOS EMERGENCY</button>
+                    <button id="voiceSOS" class="btn-voice-sos"><i class="fas fa-microphone"></i> Voice SOS</button>
+                    <p class="sos-info">Say "Help SafeTrail" to activate</p>
+                </div>
+
+                <!-- Gamification -->
+                <div class="gamification-section">
+                    <h3><i class="fas fa-trophy"></i> Safety Points</h3>
+                    <div class="points-display">
+                        <div class="points-circle">
+                            <span id="userPoints">0</span>
+                            <small>points</small>
+                        </div>
+                        <div class="points-info">
+                            <p>🎯 Report incidents: +10</p>
+                            <p>✅ Verify alerts: +5</p>
+                            <p>🛡️ Use safe routes: +3</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety Feed -->
+                <div class="safety-feed-section">
+                    <h3><i class="fas fa-newspaper"></i> Safety Feed</h3>
+                    <div id="safetyFeed" class="safety-feed">
+                        <p class="loading-text">Loading safety updates...</p>
+                    </div>
+                </div>
+
+                <!-- Incident Heat Timeline -->
+                <div class="timeline-section">
+                    <h3><i class="fas fa-chart-line"></i> Incident Heat Timeline</h3>
+                    <div class="timeline-controls">
+                        <button class="timeline-btn active" data-period="24h">24H</button>
+                        <button class="timeline-btn" data-period="7d">7D</button>
+                        <button class="timeline-btn" data-period="30d">30D</button>
+                    </div>
+                    <div id="heatTimeline" class="heat-timeline-chart">
+                        <canvas id="timelineCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Insurance Integration -->
+                <div class="insurance-section">
+                    <h3><i class="fas fa-file-contract"></i> Insurance</h3>
+                    <div class="insurance-card">
+                        <div class="insurance-status">
+                            <i class="fas fa-shield-check"></i>
+                            <span id="insuranceStatus">Not Connected</span>
+                        </div>
+                        <button id="connectInsurance" class="btn-insurance">Connect Insurance</button>
+                        <button id="fileClaim" class="btn-claim hidden">File Claim</button>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <h3>Map Legend</h3>
+                    <div class="legend-item">
+                        <span class="legend-color high-risk"></span> High Risk Zone
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color incident"></span> Reported Incident
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color sos"></span> SOS Alert
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color crowd-high"></span> High Crowd Density
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color crowd-low"></span> Low Crowd Density
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <!-- Crowd Density Toggle -->
+                <div class="map-controls">
+                    <button id="toggleCrowdDensity" class="map-control-btn" title="Toggle Crowd Density">
+                        <i class="fas fa-users"></i> Crowd Density
+                    </button>
+                    <button id="toggleHeatTimeline" class="map-control-btn" title="Show Heat Timeline">
+                        <i class="fas fa-fire"></i> Heat Map
+                    </button>
+                </div>
+
+                <!-- AI Chat Companion -->
+                <div id="aiChat" class="ai-chat hidden">
+                    <div class="chat-header">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Safety Companion</span>
+                        <button id="closeChat" class="chat-close"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="chatMessages" class="chat-messages">
+                        <div class="chat-message bot">
+                            <div class="message-content">
+                                <i class="fas fa-robot"></i>
+                                <p>Hello! I'm your AI safety companion. I'm here to help guide you safely. How can I assist you?</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" placeholder="Ask me anything about safety..." />
+                        <button id="sendChat" class="chat-send"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+                <button id="openChat" class="chat-toggle">
+                    <i class="fas fa-comments"></i>
+                </button>
+
+                <div id="routeInfo" class="route-info hidden">
+                    <h4><i class="fas fa-info-circle"></i> Route Information</h4>
+                    <div class="route-comparison">
+                        <div class="route-option">
+                            <h5><i class="fas fa-bolt"></i> Fastest Route</h5>
+                            <p id="fastestDistance">-</p>
+                            <p id="fastestDuration">-</p>
+                            <p id="fastestCost">-</p>
+                        </div>
+                        <div class="route-option">
+                            <h5><i class="fas fa-shield-alt"></i> Safest Route</h5>
+                            <p id="safestDistance">-</p>
+                            <p id="safestDuration">-</p>
+                            <p id="safestCost">-</p>
+                        </div>
+                    </div>
+                    <div class="ai-analysis">
+                        <h5><i class="fas fa-brain"></i> AI Safety Analysis</h5>
+                        <p id="aiRecommendation"></p>
+                        <div class="risk-score">
+                            <span>Risk Score:</span>
+                            <div class="risk-bar">
+                                <div id="riskLevel" class="risk-fill"></div>
+                            </div>
+                            <span id="riskPercentage">0%</span>
+                        </div>
+                        <div class="safety-factors">
+                            <h6>Safety Factors:</h6>
+                            <div class="factor-item">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>Lighting: <strong id="lightingScore">-</strong></span>
+                            </div>
+                            <div class="factor-item">
+                                <i class="fas fa-users"></i>
+                                <span>Crowd: <strong id="crowdScore">-</strong></span>
+                            </div>
+                            <div class="factor-item">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Crime Rate: <strong id="crimeScore">-</strong></span>
+                            </div>
+                        </div>
+                        <div class="cost-safety-tradeoff">
+                            <h6>💰 Safety vs Cost:</h6>
+                            <p id="tradeoffText">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
